@@ -4,7 +4,22 @@ return {
             'VonHeikemen/lsp-zero.nvim',
             branch = 'v4.x',
             lazy = true,
-            config = false,
+            config = function ()
+                local lsp_zero = require('lsp-zero')
+
+                -- don't add this function in the `LspAttach` event.
+                -- `format_on_save` should run only once.
+                lsp_zero.format_on_save({
+                    format_opts = {
+                        async = false,
+                        timeout_ms = 10000,
+                    },
+                    servers = {
+                        ['biome'] = {'javascript', 'typescript'},
+                        ['gopls'] = {'go'}
+                    }
+                })
+            end,
         },
         {
             'williamboman/mason.nvim',
@@ -84,7 +99,7 @@ return {
                 })
 
                 require('mason-lspconfig').setup({
-                    ensure_installed = {"gopls", "ast_grep"},
+                    ensure_installed = {"gopls", "ast_grep", 'biome'},
                     handlers = {
                         -- this first function is the "default handler"
                         -- it applies to every language server without a "custom handler"
