@@ -1,9 +1,12 @@
 return {
   "folke/trouble.nvim",
-  opts = function(opts)
-        opts.auto_open = true
-        opts.auto_close = true
-    end, -- for default options, refer to the configuration section for custom setup.
+  opts = {
+        -- modes = {
+        --     diagnostics = {
+        --         auto_open = true,
+        --     },
+        -- }
+    }, -- for default options, refer to the configuration section for custom setup.
   cmd = "Trouble",
   keys = {
     {
