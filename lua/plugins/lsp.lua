@@ -99,7 +99,7 @@ return {
                 })
 
                 require('mason-lspconfig').setup({
-                    ensure_installed = { "gopls", "ast_grep", 'biome' , 'helm_ls'},
+                    ensure_installed = { "gopls", "ast_grep", 'biome' , 'helm-ls'},
                     handlers = {
                         -- this first function is the "default handler"
                         -- it applies to every language server without a "custom handler"
