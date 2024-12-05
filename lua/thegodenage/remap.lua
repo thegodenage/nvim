@@ -1,5 +1,5 @@
 vim.g.mapleader = " "
-vim.keymap.set("n", "<leader>pv", vim.cmd.Ex)
+vim.keymap.set("n", "<leader>pv", ':NvimTreeFocus<CR>')
 vim.keymap.set("n", "<leader>pb", '[[:bp<CR>')
 vim.wo.relativenumber = true
 
@@ -65,12 +65,12 @@ vim.api.nvim_create_autocmd('LspAttach', {
 })
 
 vim.filetype.add({
-  extension = {
-    gotmpl = 'gotmpl',
-  },
-  pattern = {
-    [".*/templates/.*%.tpl"] = "helm",
-    [".*/templates/.*%.ya?ml"] = "helm",
-    ["helmfile.*%.ya?ml"] = "helm",
-  },
+    extension = {
+        gotmpl = 'gotmpl',
+    },
+    pattern = {
+        [".*/templates/.*%.tpl"] = "helm",
+        [".*/templates/.*%.ya?ml"] = "helm",
+        ["helmfile.*%.ya?ml"] = "helm",
+    },
 })
