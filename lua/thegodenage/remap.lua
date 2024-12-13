@@ -1,6 +1,5 @@
 vim.g.mapleader = " "
 vim.keymap.set("n", "<leader>pv", ':NvimTreeFocus<CR>')
-vim.keymap.set("n", "<leader>pb", '[[:bp<CR>')
 vim.wo.relativenumber = true
 
 vim.opt.nu = true

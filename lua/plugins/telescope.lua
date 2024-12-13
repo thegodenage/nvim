@@ -9,6 +9,7 @@ return {
 		local builtin = require('telescope.builtin')
 		vim.keymap.set('n', '<leader>pf', builtin.find_files, {})
 		vim.keymap.set('n', '<leader>pt', ':Telescope treesitter<CR>', {})
+        vim.keymap.set("n", "<leader>pb", ':Telescope buffers<CR>')
 		vim.keymap.set('n', '<C-p>', builtin.git_files, {})
 		vim.keymap.set('n', '<leader>pws', function()
 			local word = vim.fn.expand("<cword>")
