@@ -17,6 +17,7 @@ return {
                     servers = {
                         ['biome'] = { 'javascript', 'typescript', 'js', 'ts', 'jsx', 'tsx' },
                         ['gopls'] = { 'go' },
+                        ['tailwindcss'] = { 'templ', 'html', 'jsx', 'tsx' }
                     }
                 })
             end,
@@ -99,7 +100,7 @@ return {
                 })
 
                 require('mason-lspconfig').setup({
-                    ensure_installed = { "gopls", 'biome', 'helm_ls', 'templ', 'html' },
+                    ensure_installed = { 'gopls', 'biome', 'helm_ls', 'templ', 'html', 'tailwindcss' },
                     handlers = {
                         -- this first function is the "default handler"
                         -- it applies to every language server without a "custom handler"
@@ -133,6 +134,9 @@ return {
                                     })
                                 end,
                             })
+                        end,
+                        ['tailwindcss'] = function()
+                            require('lspconfig').tailwindcss.setup {}
                         end
                     }
                 })
