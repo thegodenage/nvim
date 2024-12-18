@@ -15,7 +15,7 @@ return {
                         timeout_ms = 10000,
                     },
                     servers = {
-                        ['biome'] = { 'javascript', 'typescript', 'js', 'ts', 'jsx', 'tsx' },
+                        ['biome'] = { 'javascript', 'typescript', 'js', 'ts', 'jsx', 'tsx', 'json' },
                         ['gopls'] = { 'go' },
                         ['tailwindcss'] = { 'templ', 'html', 'jsx', 'tsx' }
                     }
@@ -114,7 +114,7 @@ return {
                         end,
                         ['biome'] = function()
                             require('lspconfig').biome.setup({
-                                filetypes = { 'javascript', 'typescript', 'jsx', 'tsx', 'js', 'ts' },
+                                filetypes = { 'javascript', 'typescript', 'jsx', 'tsx', 'js', 'ts', 'json' },
                                 root_dir = require('lspconfig').util.root_pattern('.git', 'package.json'),
                                 on_attach = function(client, bufnr)
                                     -- Force-enable formatting capability
