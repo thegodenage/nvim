@@ -15,8 +15,8 @@ return {
                         timeout_ms = 10000,
                     },
                     servers = {
-                        ['biome'] = { 'javascript', 'typescript' },
-                        ['gopls'] = { 'go' }
+                        ['biome'] = { 'javascript', 'typescript', 'js', 'ts', 'jsx', 'tsx' },
+                        ['gopls'] = { 'go' },
                     }
                 })
             end,
@@ -99,7 +99,7 @@ return {
                 })
 
                 require('mason-lspconfig').setup({
-                    ensure_installed = { "gopls", "ast_grep", 'biome', 'helm_ls', 'templ', 'html' },
+                    ensure_installed = { "gopls", 'biome', 'helm_ls', 'templ', 'html' },
                     handlers = {
                         -- this first function is the "default handler"
                         -- it applies to every language server without a "custom handler"
@@ -109,6 +109,29 @@ return {
                         ['html'] = function()
                             require('lspconfig').html.setup({
                                 filetypes = { 'html', 'templ' },
+                            })
+                        end,
+                        ['biome'] = function()
+                            require('lspconfig').biome.setup({
+                                filetypes = { 'javascript', 'typescript', 'jsx', 'tsx', 'js', 'ts' },
+                                root_dir = require('lspconfig').util.root_pattern('.git', 'package.json'),
+                                on_attach = function(client, bufnr)
+                                    -- Force-enable formatting capability
+                                    client.server_capabilities.documentFormattingProvider = true
+
+                                    -- Create a manual Format command
+                                    vim.api.nvim_buf_create_user_command(bufnr, "Format", function()
+                                        vim.lsp.buf.format({ async = true })
+                                    end, { desc = "Format using Biome" })
+
+                                    -- Optionally set up formatting on save
+                                    vim.api.nvim_create_autocmd('BufWritePre', {
+                                        buffer = bufnr,
+                                        callback = function()
+                                            vim.lsp.buf.format({ async = false })
+                                        end,
+                                    })
+                                end,
                             })
                         end
                     }
