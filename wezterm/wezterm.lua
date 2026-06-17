@@ -5,7 +5,9 @@ local config = wezterm.config_builder()
 -- ── Appearance ──────────────────────────────────────────────────────────────
 config.color_scheme = "Catppuccin Mocha"
 config.font = wezterm.font_with_fallback({
+  "JetBrainsMono Nerd Font",
   "JetBrains Mono",
+  "Symbols Nerd Font Mono",
   "Menlo",
 })
 config.font_size = 14
@@ -16,6 +18,12 @@ config.window_decorations = "RESIZE"
 config.window_padding = { left = 6, right = 6, top = 4, bottom = 4 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
+
+-- Always launch in full screen.
+wezterm.on("gui-startup", function(cmd)
+  local _, _, window = wezterm.mux.spawn_window(cmd or {})
+  window:gui_window():toggle_fullscreen()
+end)
 
 -- Ensure GUI-launched WezTerm sees Homebrew + common bin paths.
 -- Without this, `command -v glow` (and other brew-installed tools) fail to resolve
