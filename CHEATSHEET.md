@@ -323,9 +323,11 @@ If you actually need to send a literal `Ctrl+A` to whatever's running in the pan
 ### Workspaces (tmux sessions)
 | Keys | Action |
 |---|---|
-| `LEADER s` | Fuzzy switcher across all existing workspaces |
+| `LEADER s` | Fuzzy session switcher — existing workspaces **+** zoxide-known project dirs (smart_workspace_switcher) |
 | `LEADER S` (Shift+s) | Create / switch to a new workspace by name |
 | `LEADER $` (Shift+4) | Rename the current workspace |
+| `LEADER R` (Shift+r) | Restore a saved session from disk (resurrect fuzzy picker) |
+| `LEADER w` | Save the current workspace state to disk right now |
 
 ### Other
 | Keys | Action |
@@ -345,10 +347,21 @@ If you actually need to send a literal `Ctrl+A` to whatever's running in the pan
 **Switching between projects** (replacing `tmux switch-client`):
 - `LEADER s` opens the fuzzy workspace switcher. Type a few letters, press Enter.
 
-**Detach/reattach (the tmux killer feature):**
-- WezTerm doesn't have tmux's daemon-by-default model. Closing the WezTerm window kills its workspaces.
-- For survive-across-window-close: run `wezterm-mux-server` once (it daemonizes), then start WezTerm clients that attach to it.
-- For survive-across-reboot: install the `resurrect.wezterm` plugin (saves workspace layouts to disk). Not configured here; add when you actually need it.
+**Session persistence (survives restart/reboot):**
+
+Two plugins are wired into `wezterm.lua` (cloned automatically on first launch into `~/Library/Application Support/wezterm/plugins/`):
+
+- **`resurrect.wezterm`** — saves workspace/window/tab/pane layout to disk under `~/Library/Application Support/wezterm/resurrect/`. State auto-saves every 5 minutes and whenever you switch away from a workspace in the switcher.
+- **`smart_workspace_switcher.wezterm`** — the `LEADER s` picker. Lists your live workspaces *and* directories from `zoxide`, so you can jump into (or spin up) a session for any project you've `cd`'d into. Requires the `zoxide` binary (installed at `/opt/homebrew/bin/zoxide`).
+
+How it flows:
+1. Work in named workspaces as usual (`LEADER S` to create, `LEADER s` to switch).
+2. Layout is saved automatically; force a save anytime with `LEADER w`.
+3. After restarting WezTerm (or a reboot), press `LEADER R` and pick the session to bring its tabs/panes back. Switching into a workspace via `LEADER s` that has saved state also restores it.
+
+**zoxide note:** the switcher only suggests project dirs once zoxide's database has entries, which it builds as you `cd` around — *if* zoxide's shell hook is active. Add `eval "$(zoxide init zsh)"` to your `~/.zshrc` if it isn't already. Without it, `LEADER s` still works but only lists already-open workspaces.
+
+**Lighter-weight alternatives** (still available, not configured): `wezterm-mux-server` daemonizes the mux so sessions survive *closing the window* (but not a reboot) — useful if you want detach/reattach without on-disk state.
 
 **Quick reference for muscle memory if you're coming from tmux:**
 
@@ -363,7 +376,7 @@ If you actually need to send a literal `Ctrl+A` to whatever's running in the pan
 | `prefix s` (session list) | `LEADER s` ✓ same |
 | `prefix $` (rename session) | `LEADER $` ✓ same |
 | `prefix [` (copy mode) | `LEADER [` ✓ same |
-| `prefix d` (detach) | Just close the window (no detach in default WezTerm) |
+| `prefix d` (detach) | Close the window; restore later with `LEADER R` (resurrect persists state to disk) |
 | `prefix r` (reload) | `LEADER r` ✓ same |
 | `prefix &` (kill window) | `LEADER &` ✓ same |
 | `prefix x` (kill pane) | `LEADER x` ✓ same |

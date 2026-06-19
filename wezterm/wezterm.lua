@@ -2,6 +2,14 @@ local wezterm = require("wezterm")
 local act = wezterm.action
 local config = wezterm.config_builder()
 
+-- ── Multiplexer plugins ──────────────────────────────────────────────────────
+-- Cloned automatically into ~/.local/share/wezterm/plugins on first launch
+-- (needs network once). resurrect.wezterm persists workspace/tab/pane layout to
+-- disk so sessions survive a restart; smart_workspace_switcher is the fuzzy
+-- session picker (lists existing workspaces + zoxide directories).
+local resurrect = wezterm.plugin.require("https://github.com/MLFlexer/resurrect.wezterm")
+local workspace_switcher = wezterm.plugin.require("https://github.com/MLFlexer/smart_workspace_switcher.wezterm")
+
 -- ── Appearance ──────────────────────────────────────────────────────────────
 config.color_scheme = "Catppuccin Mocha"
 config.font = wezterm.font_with_fallback({
@@ -18,6 +26,36 @@ config.window_decorations = "RESIZE"
 config.window_padding = { left = 6, right = 6, top = 4, bottom = 4 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
+
+-- ── Background image ────────────────────────────────────────────────────────
+-- Drop an image named `background.png` next to this file (nvim/wezterm/) and it
+-- is rendered behind everything, heavily dimmed so text stays readable. The
+-- check keeps the config valid when no image is present.
+local background_image = wezterm.config_dir .. "/background.png"
+local image_file = io.open(background_image, "r")
+if image_file then
+  image_file:close()
+  config.background = {
+    {
+      source = { File = background_image },
+      horizontal_align = "Center",
+      vertical_align = "Middle",
+      width = "100%",
+      height = "100%",
+      hsb = { brightness = 0.08 },
+    },
+    {
+      source = { Color = "#1e1e2e" }, -- Catppuccin Mocha base, as a dimming veil
+      width = "100%",
+      height = "100%",
+      opacity = 0.8,
+    },
+  }
+end
+
+-- Use real macOS fullscreen (own Space, menu bar stays hidden on focus change)
+-- instead of WezTerm's default non-native "simple" fullscreen.
+config.native_macos_fullscreen_mode = true
 
 -- Always launch in full screen.
 wezterm.on("gui-startup", function(cmd)
@@ -50,10 +88,10 @@ config.keys = {
   { key = "l", mods = "LEADER", action = act.ActivatePaneDirection("Right") },
 
   -- pane resize (hold Shift)
-  { key = "H", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Left", 5 }) },
-  { key = "J", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Down", 5 }) },
-  { key = "K", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Up", 5 }) },
-  { key = "L", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Right", 5 }) },
+  { key = "phys:H", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Left", 5 }) },
+  { key = "phys:J", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Down", 5 }) },
+  { key = "phys:K", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Up", 5 }) },
+  { key = "phys:L", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Right", 5 }) },
 
   -- pane management
   { key = "x", mods = "LEADER", action = act.CloseCurrentPane({ confirm = true }) },
@@ -77,7 +115,46 @@ config.keys = {
   { key = "9", mods = "LEADER", action = act.ActivateTab(8) },
 
   -- ── Workspaces (tmux: sessions) ───────────────────────────────────────────
-  { key = "s", mods = "LEADER", action = act.ShowLauncherArgs({ flags = "FUZZY|WORKSPACES" }) },
+  -- fuzzy session picker: existing workspaces + zoxide-known project dirs
+  { key = "s", mods = "LEADER", action = workspace_switcher.switch_workspace() },
+
+  -- restore a saved session from disk (resurrect fuzzy picker)
+  {
+    key = "phys:R",
+    mods = "LEADER|SHIFT",
+    action = wezterm.action_callback(function(win, pane)
+      resurrect.fuzzy_loader.fuzzy_load(win, pane, function(id, label)
+        local type = string.match(id, "^([^/]+)")
+        id = string.match(id, "([^/]+)$")
+        id = string.match(id, "(.+)%..+$")
+        local opts = {
+          window = win:mux_window(),
+          relative = true,
+          restore_text = true,
+          on_pane_restore = resurrect.tab_state.default_on_pane_restore,
+        }
+        if type == "workspace" then
+          local state = resurrect.state_manager.load_state(id, "workspace")
+          resurrect.workspace_state.restore_workspace(state, opts)
+        elseif type == "window" then
+          local state = resurrect.state_manager.load_state(id, "window")
+          resurrect.window_state.restore_window(pane:window(), state, opts)
+        elseif type == "tab" then
+          local state = resurrect.state_manager.load_state(id, "tab")
+          resurrect.tab_state.restore_tab(pane:tab(), state, opts)
+        end
+      end)
+    end),
+  },
+
+  -- save the current workspace state to disk right now (auto-save also runs)
+  {
+    key = "w",
+    mods = "LEADER",
+    action = wezterm.action_callback(function(_, _)
+      resurrect.state_manager.save_state(resurrect.workspace_state.get_workspace_state())
+    end),
+  },
   {
     key = "$",
     mods = "LEADER|SHIFT",
@@ -91,7 +168,7 @@ config.keys = {
     }),
   },
   {
-    key = "S",
+    key = "phys:S",
     mods = "LEADER|SHIFT",
     action = act.PromptInputLine({
       description = "New workspace name",
@@ -126,5 +203,38 @@ config.keys = {
     }),
   },
 }
+
+-- ── Multiplexer wiring ───────────────────────────────────────────────────────
+workspace_switcher.apply_to_config(config)
+
+-- GUI-launched WezTerm (Spotlight/Dock) doesn't inherit the shell PATH, so point
+-- the switcher at the absolute zoxide binary rather than relying on a bare name.
+workspace_switcher.zoxide_path = "/opt/homebrew/bin/zoxide"
+
+-- Auto-save: persist workspaces/windows/tabs every 5 minutes.
+resurrect.state_manager.periodic_save({
+  interval_seconds = 300,
+  save_workspaces = true,
+  save_windows = true,
+  save_tabs = true,
+})
+
+-- Save the workspace you're leaving when you pick another in the switcher.
+wezterm.on("smart_workspace_switcher.workspace_switcher.selected", function(_, _, _)
+  resurrect.state_manager.save_state(resurrect.workspace_state.get_workspace_state())
+end)
+
+-- When the switcher creates a workspace, restore its saved layout if one exists.
+wezterm.on("smart_workspace_switcher.workspace_switcher.created", function(window, _, label)
+  local ok, state = pcall(resurrect.state_manager.load_state, label, "workspace")
+  if ok and state then
+    resurrect.workspace_state.restore_workspace(state, {
+      window = window:mux_window(),
+      relative = true,
+      restore_text = true,
+      on_pane_restore = resurrect.tab_state.default_on_pane_restore,
+    })
+  end
+end)
 
 return config
