@@ -27,14 +27,28 @@ config.window_padding = { left = 6, right = 6, top = 4, bottom = 4 }
 config.scrollback_lines = 10000
 config.audible_bell = "Disabled"
 
+-- Render via Metal (WebGpu) instead of the deprecated OpenGL/CGL backend, whose
+-- swap_buffers path segfaults during macOS display-reconfiguration events (screen
+-- lock / login window after inactivity).
+config.front_end = "WebGpu"
+
 -- ── Background image ────────────────────────────────────────────────────────
--- Drop an image named `background.png` next to this file (nvim/wezterm/) and it
--- is rendered behind everything, heavily dimmed so text stays readable. The
--- check keeps the config valid when no image is present.
-local background_image = wezterm.config_dir .. "/background.png"
-local image_file = io.open(background_image, "r")
-if image_file then
-  image_file:close()
+-- Drop an image named `background.gif` or `background.png` next to this file
+-- (nvim/wezterm/) and it is rendered behind everything, heavily dimmed so text
+-- stays readable. The check keeps the config valid when no image is present.
+-- Note: an animated GIF re-renders every frame, so it costs noticeably more
+-- CPU/GPU/battery than a static PNG. Delete background.gif to stop the animation.
+local background_image
+for _, candidate in ipairs({ "/background.gif", "/background.png" }) do
+  local path = wezterm.config_dir .. candidate
+  local handle = io.open(path, "r")
+  if handle then
+    handle:close()
+    background_image = path
+    break
+  end
+end
+if background_image then
   config.background = {
     {
       source = { File = background_image },

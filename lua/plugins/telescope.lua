@@ -48,6 +48,18 @@ return {
     telescope.setup({
       defaults = {
         path_display = { "truncate" },
+        file_ignore_patterns = {
+          "node_modules/",
+          "%.git/",
+          "vendor/bundle/",
+          "tmp/",
+          "log/",
+          "coverage/",
+          "public/assets/",
+          "public/packs/",
+          "dist/",
+          "build/",
+        },
         mappings = {
           i = {
             ["<C-u>"] = false,
