@@ -92,7 +92,38 @@ return {
           "ruby_lsp",
           "marksman",
         },
-        automatic_enable = true,
+        -- ruby_lsp is started manually below: for Dockerized projects it must
+        -- run inside the container, not on the host.
+        automatic_enable = { exclude = { "ruby_lsp" } },
+      })
+
+      -- ruby-lsp: run inside the `web` container when the project is
+      -- Dockerized (host ruby/gems won't match). Relies on a compose mount
+      -- that exposes the repo at its host path inside the container, so file
+      -- URIs line up on both sides. Falls back to the host binary otherwise.
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = "ruby",
+        desc = "Start ruby-lsp (in-container for Docker projects)",
+        callback = function(args)
+          local root = vim.fs.root(args.buf, { "Gemfile", ".git" })
+          if not root then return end
+
+          local cmd
+          if vim.uv.fs_stat(root .. "/docker-compose.yml") then
+            cmd = { "docker", "compose", "exec", "-w", root, "-T", "web", "bundle", "exec", "ruby-lsp" }
+          else
+            local mason_bin = vim.fn.stdpath("data") .. "/mason/bin/ruby-lsp"
+            cmd = { vim.uv.fs_stat(mason_bin) and mason_bin or "ruby-lsp" }
+          end
+
+          vim.lsp.start({
+            name = "ruby_lsp",
+            cmd = cmd,
+            cmd_cwd = root,
+            root_dir = root,
+            capabilities = capabilities,
+          })
+        end,
       })
 
       vim.api.nvim_create_autocmd("LspAttach", {
