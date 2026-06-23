@@ -116,6 +116,17 @@ Formatting is owned by `conform.nvim`, not the LSP. Format-on-save runs with a 1
 |---|---|
 | `<leader>pv` | Focus nvim-tree |
 
+### Project commands — per-repo shell shortcuts
+Store shell commands scoped to the current repo (keyed by cwd). Stored centrally in `stdpath("data")/projcmds.json`, **not** in the repo, so nothing gets committed.
+
+| Keys | Command | Action |
+|---|---|---|
+| `<leader>Pc` | `:Pcc` / `pcc` | Create a command (prompts name + shell command) |
+| `<leader>Pr` | `:Pcr` / `pcr` | Run — quick `vim.ui.select` picker |
+| `<leader>Pe` | `:Pce` / `pce` | Explore in Telescope (`<CR>` runs, `<C-d>` or `dd` deletes) |
+
+How to use: open a repo, `<leader>Pc` → name it e.g. `sh-web`, command `docker compose exec web sh`. From then on `<leader>Pr`/`<leader>Pe` in that repo list it and run it in a 15-line terminal split (drops you straight into insert). The picker only shows commands for the repo you're in. Lowercase `pcc`/`pcr`/`pce` work at the `:` prompt too (cmdline abbreviations).
+
 ### Harpoon — pinned files
 | Keys | Action |
 |---|---|
@@ -245,8 +256,9 @@ How to use: bufferline puts a strip across the top showing every open buffer (wi
 └── lua/
     ├── config/lazy.lua          bootstraps lazy.nvim
     ├── thegodenage/
-    │   ├── init.lua             requires remap
-    │   └── remap.lua            options + global mappings
+    │   ├── init.lua             requires remap + projcmds
+    │   ├── remap.lua            options + global mappings
+    │   └── projcmds.lua         per-repo shell command store + Telescope UI
     └── plugins/                 one plugin per file
         ├── bufferline.lua       buffer tab bar
         ├── cmp.lua              blink.cmp
