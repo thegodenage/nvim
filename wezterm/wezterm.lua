@@ -91,6 +91,13 @@ config.keys = {
   -- send literal Ctrl+A (when you actually need it in the shell/nvim)
   { key = "a", mods = "LEADER|CTRL", action = act.SendKey({ key = "a", mods = "CTRL" }) },
 
+  -- Option+Left/Right: jump whole words (readline ESC-b / ESC-f)
+  { key = "LeftArrow",  mods = "OPT", action = act.SendKey({ key = "b", mods = "ALT" }) },
+  { key = "RightArrow", mods = "OPT", action = act.SendKey({ key = "f", mods = "ALT" }) },
+
+  -- Option+Backspace: delete the previous word (readline C-w, ASCII 0x17)
+  { key = "Backspace", mods = "OPT", action = act.SendKey({ key = "w", mods = "CTRL" }) },
+
   -- ── Panes (tmux: splits) ──────────────────────────────────────────────────
   { key = "|", mods = "LEADER|SHIFT", action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
   { key = "-", mods = "LEADER",       action = act.SplitVertical({ domain = "CurrentPaneDomain" }) },
