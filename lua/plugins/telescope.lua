@@ -42,6 +42,11 @@ return {
       function() require("telescope.builtin").live_grep() end,
       desc = "Live grep",
     },
+    {
+      "<leader>pG",
+      function() require("telescope.builtin").current_buffer_fuzzy_find() end,
+      desc = "Find in current buffer",
+    },
   },
   config = function()
     local telescope = require("telescope")
