@@ -9,6 +9,205 @@ local config = wezterm.config_builder()
 -- session picker (lists existing workspaces + zoxide directories).
 local resurrect = wezterm.plugin.require("https://github.com/MLFlexer/resurrect.wezterm")
 local workspace_switcher = wezterm.plugin.require("https://github.com/MLFlexer/smart_workspace_switcher.wezterm")
+local mux = wezterm.mux
+
+-- ── Workspace switcher: Ctrl+D delete (with confirmation) ───────────────────
+-- InputSelector can't bind Ctrl+D itself; a one-shot key table intercepts it,
+-- then a second picker asks Enter=confirm / Esc=cancel (workspace-manager pattern).
+
+local switcher_state = { pending_action = nil }
+
+local function workspace_exists(name)
+  for _, ws in ipairs(mux.get_workspace_names()) do
+    if ws == name then
+      return true
+    end
+  end
+  return false
+end
+
+local function shell_quote(s)
+  return "'" .. s:gsub("'", "'\\''") .. "'"
+end
+
+local function delete_resurrect_workspace(workspace_name)
+  resurrect.state_manager.delete_state("workspace/" .. workspace_name:gsub("/", "+") .. ".json")
+end
+
+local function kill_workspace_panes(workspace_name)
+  local ok, stdout = wezterm.run_child_process({ "wezterm", "cli", "list", "--format=json" })
+  if not ok or not stdout then
+    return
+  end
+  local panes = wezterm.json_parse(stdout)
+  if not panes then
+    return
+  end
+  for _, p in ipairs(panes) do
+    if p.workspace == workspace_name then
+      wezterm.run_child_process({ "wezterm", "cli", "kill-pane", "--pane-id=" .. tostring(p.pane_id) })
+    end
+  end
+end
+
+local function remove_zoxide_path(path)
+  local shell = os.getenv("SHELL") or "sh"
+  wezterm.run_child_process({
+    shell,
+    "-c",
+    workspace_switcher.zoxide_path .. " remove " .. shell_quote(path),
+  })
+end
+
+local function delete_session(id, window)
+  if workspace_exists(id) then
+    if id == window:active_workspace() then
+      wezterm.log_warn("Cannot delete the active workspace: " .. id)
+      return false
+    end
+    kill_workspace_panes(id)
+    delete_resurrect_workspace(id)
+    return true
+  end
+
+  -- zoxide suggestion (id is an absolute path)
+  remove_zoxide_path(id)
+  delete_resurrect_workspace(id:gsub(wezterm.home_dir, "~"))
+  return true
+end
+
+local function switcher_keymap(key, mods, action_name)
+  return {
+    key = key,
+    mods = mods,
+    action = wezterm.action_callback(function(window, pane)
+      switcher_state.pending_action = action_name
+      window:perform_action(act.PopKeyTable, pane)
+      window:perform_action(act.SendKey({ key = "Enter" }), pane)
+    end),
+  }
+end
+
+local function switcher_keymap_forward(key, mods)
+  return {
+    key = key,
+    mods = mods or "NONE",
+    action = wezterm.action_callback(function(window, pane)
+      switcher_state.pending_action = nil
+      window:perform_action(act.PopKeyTable, pane)
+      window:perform_action(act.SendKey({ key = key }), pane)
+    end),
+  }
+end
+
+local function get_mux_window_for_workspace(workspace)
+  for _, mux_win in ipairs(mux.all_windows()) do
+    if mux_win:get_workspace() == workspace then
+      return mux_win
+    end
+  end
+  error("Could not find a workspace with the name: " .. workspace)
+end
+
+local function pick_workspace(window, pane, id, label)
+  wezterm.emit("smart_workspace_switcher.workspace_switcher.selected", window, id, label)
+
+  if workspace_exists(id) then
+    window:perform_action(act.SwitchToWorkspace({ name = id }), pane)
+    wezterm.emit(
+      "smart_workspace_switcher.workspace_switcher.chosen",
+      get_mux_window_for_workspace(id),
+      id,
+      label
+    )
+  else
+    local label_path = label
+    window:perform_action(
+      act.SwitchToWorkspace({
+        name = label_path,
+        spawn = {
+          label = "Workspace: " .. label_path,
+          cwd = id,
+        },
+      }),
+      pane
+    )
+    wezterm.emit(
+      "smart_workspace_switcher.workspace_switcher.created",
+      get_mux_window_for_workspace(label_path),
+      id,
+      label_path
+    )
+    wezterm.run_child_process({
+      os.getenv("SHELL") or "sh",
+      "-c",
+      workspace_switcher.zoxide_path .. " add " .. shell_quote(id),
+    })
+  end
+end
+
+function workspace_switcher.switch_workspace(opts)
+  return wezterm.action_callback(function(window, pane)
+    wezterm.emit("smart_workspace_switcher.workspace_switcher.start", window, pane)
+    local choices = workspace_switcher.get_choices(opts)
+    local reopen = workspace_switcher.switch_workspace(opts)
+
+    switcher_state.pending_action = nil
+    window:perform_action(act.ActivateKeyTable({ name = "workspace_switcher_actions", one_shot = false }), pane)
+
+    window:perform_action(
+      act.InputSelector({
+        action = wezterm.action_callback(function(win, p, id, label)
+          local pending = switcher_state.pending_action
+          switcher_state.pending_action = nil
+
+          if not id and not label then
+            wezterm.emit("smart_workspace_switcher.workspace_switcher.canceled", win, p)
+            return
+          end
+
+          if pending == "delete" then
+            if workspace_exists(id) and id == win:active_workspace() then
+              wezterm.log_warn("Cannot delete the active workspace: " .. id)
+              wezterm.time.call_after(0.05, function()
+                win:perform_action(reopen, p)
+              end)
+              return
+            end
+
+            win:perform_action(
+              act.InputSelector({
+                title = "Delete session?",
+                description = 'Delete "' .. id .. '"?  Enter=confirm  Esc=cancel',
+                choices = {
+                  { id = id, label = "Delete " .. id },
+                },
+                action = wezterm.action_callback(function(confirm_win, confirm_pane, confirm_id, _)
+                  if confirm_id then
+                    delete_session(confirm_id, confirm_win)
+                  end
+                  wezterm.time.call_after(0.05, function()
+                    confirm_win:perform_action(reopen, confirm_pane)
+                  end)
+                end),
+              }),
+              p
+            )
+            return
+          end
+
+          pick_workspace(win, p, id, label)
+        end),
+        title = "Choose Workspace",
+        description = "Select a workspace | Ctrl+D=delete | Enter=accept | Esc=cancel | / = filter",
+        fuzzy_description = "Workspace to switch | Ctrl+D=delete: ",
+        choices = choices,
+        fuzzy = true,
+      }),
+      pane
+    )
+  end)
+end
 
 -- ── Appearance ──────────────────────────────────────────────────────────────
 config.color_scheme = "Catppuccin Mocha"
@@ -86,6 +285,13 @@ config.set_environment_variables = {
 
 -- ── tmux-style leader: Ctrl+A ───────────────────────────────────────────────
 config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 1500 }
+
+config.key_tables = config.key_tables or {}
+config.key_tables.workspace_switcher_actions = {
+  switcher_keymap_forward("Enter"),
+  switcher_keymap("d", "CTRL", "delete"),
+  switcher_keymap_forward("Escape"),
+}
 
 config.keys = {
   -- send literal Ctrl+A (when you actually need it in the shell/nvim)

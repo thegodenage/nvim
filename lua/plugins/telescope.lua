@@ -16,7 +16,18 @@ return {
   keys = {
     { "<leader>pf", function() require("telescope.builtin").find_files() end,    desc = "Find files" },
     { "<C-p>",      function() require("telescope.builtin").git_files() end,     desc = "Find git files" },
-    { "<leader>pb", function() require("telescope.builtin").buffers() end,       desc = "Find buffers" },
+    {
+      "<leader>pb",
+      function()
+        require("telescope.builtin").buffers({
+          attach_mappings = function(_, map)
+            map("i", "<C-d>", require("telescope.actions").delete_buffer)
+            return true
+          end,
+        })
+      end,
+      desc = "Find buffers",
+    },
     { "<leader>pt", function() require("telescope.builtin").treesitter() end,    desc = "Find treesitter symbols" },
     { "<leader>vh", function() require("telescope.builtin").help_tags() end,     desc = "Help tags" },
     { "<leader>pr", function() require("telescope.builtin").resume() end,        desc = "Resume last picker" },

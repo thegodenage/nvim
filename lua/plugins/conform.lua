@@ -27,7 +27,10 @@ return {
       css = { "prettier" },
       markdown = { "prettier" },
       yaml = { "prettier" },
-      -- ruby = { "rubocop" }, -- enable if you run rubocop locally rather than in Docker
+      --       ruby = { "rubocop" }, -- enable if you run rubocop locally rather than in Docker
+      elixir = { "mix" },
+      eelixir = { "mix" },
+      heex = { "mix" },
     },
     format_on_save = function(bufnr)
       if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then

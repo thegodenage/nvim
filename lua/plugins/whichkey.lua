@@ -7,6 +7,7 @@ return {
       { "<leader>p", group = "pick / find" },
       { "<leader>x", group = "trouble / diagnostics" },
       { "<leader>c", group = "code / lsp" },
+      { "<leader>m", group = "mix / elixir" },
       { "<leader>g", group = "git (fugitive)" },
       { "<leader>h", group = "git hunk / harpoon nav" },
       { "<leader>b", group = "buffer (bufferline)" },
