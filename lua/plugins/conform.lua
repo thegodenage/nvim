@@ -16,6 +16,7 @@ return {
     formatters_by_ft = {
       lua = { "stylua" },
       go = { "goimports", "gofmt" },
+      rust = { "rustfmt" },
       python = { "ruff_organize_imports", "ruff_format" },
       javascript = { "biome" },
       typescript = { "biome" },

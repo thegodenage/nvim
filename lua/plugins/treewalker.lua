@@ -1,5 +1,6 @@
 return {
   "aaronik/treewalker.nvim",
+  dependencies = { "nvim-treesitter" },
   event = "VeryLazy",
   opts = {
     highlight = true,

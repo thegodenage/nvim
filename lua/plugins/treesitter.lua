@@ -6,6 +6,19 @@ return {
     event = { "BufReadPost", "BufNewFile" },
     dependencies = { "nvim-treesitter/nvim-treesitter-textobjects" },
     config = function()
+      local function ensure_buf_parsed(bufnr)
+        if vim.bo[bufnr].buftype ~= "" then
+          return
+        end
+
+        local ok, parser = pcall(vim.treesitter.get_parser, bufnr)
+        if ok and parser then
+          pcall(function()
+            parser:parse()
+          end)
+        end
+      end
+
       require("nvim-treesitter.configs").setup({
         ensure_installed = {
           "vimdoc", "lua", "bash",
@@ -15,7 +28,7 @@ return {
           "rust", "c",
           "python",
           "ruby",
-          "elixir", "eelixir", "heex",
+          "elixir", "eex", "heex",
           "markdown", "markdown_inline",
           "helm",
           "templ",
@@ -68,6 +81,20 @@ return {
         },
       },
     })
-  end,
+
+      -- Lazy-load runs setup after BufReadPost, so the opening buffer may not be parsed yet.
+      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(buf) then
+          ensure_buf_parsed(buf)
+        end
+      end
+
+      vim.api.nvim_create_autocmd({ "BufEnter" }, {
+        group = vim.api.nvim_create_augroup("TreesitterEnsureParsed", { clear = true }),
+        callback = function(args)
+          ensure_buf_parsed(args.buf)
+        end,
+      })
+    end,
   },
 }

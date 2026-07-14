@@ -8,6 +8,7 @@ return {
       { "<leader>x", group = "trouble / diagnostics" },
       { "<leader>c", group = "code / lsp" },
       { "<leader>m", group = "mix / elixir" },
+      { "<leader>r", group = "rust / cargo" },
       { "<leader>g", group = "git (fugitive)" },
       { "<leader>h", group = "git hunk / harpoon nav" },
       { "<leader>b", group = "buffer (bufferline)" },
