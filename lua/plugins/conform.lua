@@ -28,10 +28,17 @@ return {
       css = { "prettier" },
       markdown = { "prettier" },
       yaml = { "prettier" },
+      mdm = { "mdm_fmt" },
       --       ruby = { "rubocop" }, -- enable if you run rubocop locally rather than in Docker
       elixir = { "mix" },
       eelixir = { "mix" },
       heex = { "mix" },
+    },
+    formatters = {
+      mdm_fmt = {
+        command = "mdm-dsl-fmt",
+        stdin = false,
+      },
     },
     format_on_save = function(bufnr)
       if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then

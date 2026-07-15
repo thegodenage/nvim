@@ -1,9 +1,1 @@
-[
-  (config_block)
-  (case_block)
-  (backend_layer)
-  (mdm_layer)
-  (device_layer)
-  (expect_block)
-  (cleanup_block)
-] @fold
+/Users/michalkowal/Projects/daemon-mdm-test/mdm-dsl/tree-sitter/queries/folds.scm

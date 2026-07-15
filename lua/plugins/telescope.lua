@@ -1,3 +1,5 @@
+local find_files = require("util.telescope_find_files")
+
 return {
   "nvim-telescope/telescope.nvim",
   tag = "0.1.8",
@@ -14,7 +16,7 @@ return {
     "nvim-telescope/telescope-ui-select.nvim",
   },
   keys = {
-    { "<leader>pf", function() require("telescope.builtin").find_files() end,    desc = "Find files" },
+    { "<leader>pf", function() find_files.find_files() end, desc = "Find files" },
     { "<C-p>",      function() require("telescope.builtin").git_files() end,     desc = "Find git files" },
     {
       "<leader>pb",
