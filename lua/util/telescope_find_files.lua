@@ -4,6 +4,7 @@ local M = {}
 -- Add entries here to surface other ignored files without enabling no_ignore globally.
 M.gitignore_exceptions = {
   "**/*.env*",
+  "**/.cursor/**",
 }
 
 local function shell_quote(arg)

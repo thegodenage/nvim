@@ -15,7 +15,8 @@ from `~/.config/wezterm/`, not `~/.config/nvim/wezterm/`.
 │   ├── plugins/                 one plugin per file
 │   └── thegodenage/             options + global remaps
 ├── wezterm/                     WezTerm config (NOT auto-loaded — needs symlink, see below)
-│   └── wezterm.lua
+│   ├── wezterm.lua
+│   └── ensure-herdr.sh          installs Herdr on first WezTerm launch if missing
 ├── CHEATSHEET.md                full keymap reference (nvim + wezterm)
 └── README.md                    this file
 ```
@@ -50,11 +51,13 @@ ls -la ~/.config/wezterm
 ```
 
 Reload WezTerm with `Ctrl+Shift+R` (or restart it) and the new config takes effect.
+On first launch, `ensure-herdr.sh` installs [Herdr](https://herdr.dev) if it is not already
+on your `PATH`.
 
 If you don't use WezTerm, skip this step — nothing in Neovim depends on it.
 
 ## Reference
 
 All keymaps (Neovim + WezTerm) and plugin descriptions live in
-[`CHEATSHEET.md`](./CHEATSHEET.md). From inside WezTerm you can pop it up at any time with
-`Ctrl+A ?`.
+[`CHEATSHEET.md`](./CHEATSHEET.md). WezTerm handles appearance; run `herdr` inside a pane for
+multiplexing (installed automatically on first launch via `ensure-herdr.sh`).

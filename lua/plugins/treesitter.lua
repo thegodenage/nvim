@@ -31,6 +31,7 @@ return {
           "elixir", "eex", "heex",
           "markdown", "markdown_inline",
           "helm",
+          "hcl",
           "templ",
           "dockerfile", "gitignore", "gitcommit",
           "diff", "regex",

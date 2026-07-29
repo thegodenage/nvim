@@ -294,105 +294,28 @@ How to use: bufferline puts a strip across the top showing every open buffer (wi
 
 ---
 
-# WezTerm — tmux-style workflow
+# WezTerm + Herdr
 
-Config lives at `~/.config/wezterm/wezterm.lua`. Reload after edits with `LEADER r` (or restart WezTerm).
+Config lives at `~/.config/wezterm/wezterm.lua`. Reload after edits with `Ctrl+Shift+R` (or restart WezTerm).
 
-## The mental model
+WezTerm is the terminal emulator (fonts, colors, fullscreen). **Herdr** is the multiplexer for panes, tabs, workspaces, and persistent agent sessions — run `herdr` inside a WezTerm pane to start it.
 
-| WezTerm name | tmux name | What it is |
-|---|---|---|
-| pane | pane | A split inside one tab |
-| tab | window | A row of one-or-more panes |
-| workspace | session | A named group of tabs (think "project") |
+On first GUI launch, WezTerm runs `wezterm/ensure-herdr.sh`, which installs Herdr if `herdr` is not already on your `PATH`:
 
-## The leader key
+```sh
+curl -fsSL https://herdr.dev/install.sh | sh
+```
 
-The leader is **`Ctrl+A`** (exactly like a default tmux config). You press leader, release, then press the next key. So "leader, then `c`" means: `Ctrl+A`, release, `c`.
+Docs: [herdr.dev](https://herdr.dev)
 
-If you actually need to send a literal `Ctrl+A` to whatever's running in the pane (e.g. start-of-line in bash), press it twice: `Ctrl+A Ctrl+A`.
+## WezTerm keybindings
 
-## All keybindings
-
-### Panes (splits inside a tab)
 | Keys | Action |
 |---|---|
-| `LEADER \|` (i.e. Ctrl+A then Shift+\|) | Split horizontally (new pane to the right) |
-| `LEADER -` | Split vertically (new pane below) |
-| `LEADER h` / `j` / `k` / `l` | Move focus left / down / up / right between panes |
-| `LEADER H` / `J` / `K` / `L` | Resize the current pane in that direction (by 5 cells) |
-| `LEADER z` | Zoom (toggle pane full-screen within the tab) |
-| `LEADER x` | Close current pane (with confirmation) |
+| `Option+Left` / `Option+Right` | Jump backward / forward one word (readline `Alt+b` / `Alt+f`) |
+| `Option+Backspace` | Delete the previous word (readline `Ctrl+w`) |
 
-### Tabs (multiple terminals in one window)
-| Keys | Action |
-|---|---|
-| `LEADER c` | Create a new tab |
-| `LEADER n` | Next tab |
-| `LEADER p` | Previous tab |
-| `LEADER 1` … `LEADER 9` | Jump to tab N |
-| `LEADER &` (Shift+7) | Close current tab (with confirmation) |
+Everything else (splits, tabs, workspaces, detach/reattach) is handled by Herdr once you run `herdr` in a pane. See the Herdr docs for its keybindings and CLI.
 
-### Workspaces (tmux sessions)
-| Keys | Action |
-|---|---|
-| `LEADER s` | Fuzzy session switcher — existing workspaces **+** zoxide-known project dirs (smart_workspace_switcher) |
-| `LEADER S` (Shift+s) | Create / switch to a new workspace by name |
-| `LEADER $` (Shift+4) | Rename the current workspace |
-| `LEADER R` (Shift+r) | Restore a saved session from disk (resurrect fuzzy picker) |
-| `LEADER w` | Save the current workspace state to disk right now |
-
-### Other
-| Keys | Action |
-|---|---|
-| `LEADER [` | Enter copy mode (scroll + select with vim motions; `q` exits) |
-| `LEADER r` | Reload the WezTerm config |
-| `LEADER ?` | Open this cheatsheet in a new pane (right-half split). Uses `glow` if installed, otherwise `less`. Close with `LEADER x` or just `q` in `less`. |
-| `LEADER Ctrl+a` | Send a literal `Ctrl+A` to the pane |
-
-## How to actually work with this
-
-**Starting a session for a project** (replacing `tmux new -s myproj`):
-1. `LEADER S` → type "myproj" → Enter. You're now in a workspace called "myproj".
-2. `LEADER -` to split off a pane for your shell, `LEADER |` to split off another for tests/logs.
-3. `LEADER c` if you want more tabs (e.g. one tab for editing, one for running tools).
-
-**Switching between projects** (replacing `tmux switch-client`):
-- `LEADER s` opens the fuzzy workspace switcher. Type a few letters, press Enter.
-
-**Session persistence (survives restart/reboot):**
-
-Two plugins are wired into `wezterm.lua` (cloned automatically on first launch into `~/Library/Application Support/wezterm/plugins/`):
-
-- **`resurrect.wezterm`** — saves workspace/window/tab/pane layout to disk under `~/Library/Application Support/wezterm/resurrect/`. State auto-saves every 5 minutes and whenever you switch away from a workspace in the switcher.
-- **`smart_workspace_switcher.wezterm`** — the `LEADER s` picker. Lists your live workspaces *and* directories from `zoxide`, so you can jump into (or spin up) a session for any project you've `cd`'d into. Requires the `zoxide` binary (installed at `/opt/homebrew/bin/zoxide`).
-
-How it flows:
-1. Work in named workspaces as usual (`LEADER S` to create, `LEADER s` to switch).
-2. Layout is saved automatically; force a save anytime with `LEADER w`.
-3. After restarting WezTerm (or a reboot), press `LEADER R` and pick the session to bring its tabs/panes back. Switching into a workspace via `LEADER s` that has saved state also restores it.
-
-**zoxide note:** the switcher only suggests project dirs once zoxide's database has entries, which it builds as you `cd` around — *if* zoxide's shell hook is active. Add `eval "$(zoxide init zsh)"` to your `~/.zshrc` if it isn't already. Without it, `LEADER s` still works but only lists already-open workspaces.
-
-**Lighter-weight alternatives** (still available, not configured): `wezterm-mux-server` daemonizes the mux so sessions survive *closing the window* (but not a reboot) — useful if you want detach/reattach without on-disk state.
-
-**Quick reference for muscle memory if you're coming from tmux:**
-
-| What you did in tmux | What you do in WezTerm |
-|---|---|
-| `prefix c` | `LEADER c` ✓ same |
-| `prefix \|` / `prefix %` | `LEADER \|` (h-split), `LEADER -` (v-split) |
-| `prefix hjkl` (with vim-tmux-navigator) | `LEADER hjkl` ✓ same |
-| `prefix n` / `prefix p` | `LEADER n` / `LEADER p` ✓ same |
-| `prefix 1-9` | `LEADER 1-9` ✓ same |
-| `prefix z` | `LEADER z` ✓ same |
-| `prefix s` (session list) | `LEADER s` ✓ same |
-| `prefix $` (rename session) | `LEADER $` ✓ same |
-| `prefix [` (copy mode) | `LEADER [` ✓ same |
-| `prefix d` (detach) | Close the window; restore later with `LEADER R` (resurrect persists state to disk) |
-| `prefix r` (reload) | `LEADER r` ✓ same |
-| `prefix &` (kill window) | `LEADER &` ✓ same |
-| `prefix x` (kill pane) | `LEADER x` ✓ same |
-
-If something doesn't behave: `LEADER r` to reload, or open WezTerm's debug overlay with `Ctrl+Shift+L`.
+If something doesn't behave: reload WezTerm with `Ctrl+Shift+R`, or open the debug overlay with `Ctrl+Shift+L`.
 

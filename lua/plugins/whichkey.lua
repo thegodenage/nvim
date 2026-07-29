@@ -5,6 +5,7 @@ return {
     preset = "modern",
     spec = {
       { "<leader>p", group = "pick / find" },
+      { "<leader>pair", desc = "Pair programming partner" },
       { "<leader>x", group = "trouble / diagnostics" },
       { "<leader>c", group = "code / lsp" },
       { "<leader>m", group = "mix / elixir" },
